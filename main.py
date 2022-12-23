@@ -106,7 +106,7 @@ for json_filename in ['settings', 'players']:
 
 # Создание таблицы
 players_table = PrettyTable()
-players_table.field_names = ['No', 'Nickname', 'Rank', 'PO', 'Legend(K)', 'State']
+players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kills)', 'State']
 
 
 # Создание объектов игроков
@@ -114,6 +114,7 @@ players_list = []
 for pl in config_json['players']:
     players_list.append(playerData(pl["Nickname"], pl["Platform"]))
 
+print("Loading..")
 while True:
     
     # Очистка переменных и таблицы
@@ -128,12 +129,12 @@ while True:
         # Заполнение полей таблицы
         player_nickname = player.nickname
         if player.nickname != player.api_nickname:
-            player_nickname += f" ({player.api_nickname})"
+            player_nickname += f"({player.api_nickname})"
 
         player_rank = f"{player.rank} {('I' * player.division).replace('IIII', 'IV')}"
 
         player_legend = player.selected_legend
-        if player.legend_kills != 0:
+        if player.legend_kills != {}:
             player_legend += f"({player.legend_kills})"
 
         player_state = player.current_state_as_text
