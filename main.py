@@ -83,6 +83,22 @@ class divisionTransform():
     @staticmethod
     def to_roman(division):
         return ('I' * division).replace('IIII', 'IV')
+    
+    @staticmethod
+    def to_progress(perc2next_div, progress_lenght = 20):
+        """
+        Принимает процент заполнения шкалы прогресса от 0 до 1 и общую длину шкалы
+        Возвращает заполненную шкалу прогресса
+        """
+        progress_bar = ''
+        success_lenght = int(perc2next_div * progress_lenght)
+    
+        for n in range(0, success_lenght):
+            progress_bar += '█'
+        for n in range(0, progress_lenght - success_lenght):
+            progress_bar += '▁'
+    
+        return progress_bar
 
 
 config_json = {
@@ -118,12 +134,10 @@ for json_filename in ['settings', 'players']:
 players_table = PrettyTable()
 players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kills)', 'State']
 
-
 # Создание объектов игроков
 players_list = []
 for pl in config_json['players']:
     players_list.append(playerData(pl["Nickname"], pl["Platform"]))
-
 print("Loading..")
 while True:
     
