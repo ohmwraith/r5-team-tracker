@@ -5,6 +5,7 @@ from prettytable import PrettyTable
 from abc import ABCMeta, abstractmethod
 
 class JSONFile():
+    @staticmethod
     def get(filename):
         """
         Возвращает данные из файла filename.json в формате JSON
@@ -16,14 +17,18 @@ class JSONFile():
             return []
         except json.decoder.JSONDecodeError:
             return []
+
+    @staticmethod
     def save(json_data, filename):
         """
         Сохраняет игроков в файле players.json в формате JSON
         """
         with open(filename + '.json', 'w') as json_file:
             json.dump(json_data, json_file, indent=4)
+
+    @staticmethod
     def exists(filename):
-        return os.path.exists(filename + '.json')
+        return os.path.exists(f'{filename}.json')
 
 
 class playerData():
@@ -44,6 +49,7 @@ class playerData():
         self.legend_kills = {}
         self.data = {}
 
+
     def update(self, json_data):
         self.data = json_data
         self.api_nickname = json_data['global']['name']
@@ -56,10 +62,13 @@ class playerData():
         self.party_full = json_data['realtime']['partyFull'] == 1
         self.current_state_as_text = json_data['realtime']['currentStateAsText']
         self.selected_legend = json_data['realtime']['selectedLegend']
-        self.legend_data = json_data['legends']['all'][self.selected_legend]['data']
-        for stat in self.legend_data:
-            if stat['key'] == "kills":
-                self.legend_kills = stat['value']
+        try:
+            self.legend_data = json_data['legends']['all'][self.selected_legend]['data']
+            for stat in self.legend_data:
+                if stat['key'] == "kills":
+                    self.legend_kills = stat['value']
+        except KeyError:
+            self.legend_data = "API Error"
         
 
 class playerAPI():
@@ -70,9 +79,10 @@ class playerAPI():
         return responce.json()
 
 
-class progressScore():
-    def create(len, score):
-        pass
+class divisionTransform():
+    @staticmethod
+    def to_roman(division):
+        return ('I' * division).replace('IIII', 'IV')
 
 
 config_json = {
@@ -131,7 +141,7 @@ while True:
         if player.nickname != player.api_nickname:
             player_nickname += f"({player.api_nickname})"
 
-        player_rank = f"{player.rank} {('I' * player.division).replace('IIII', 'IV')}"
+        player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}"
 
         player_legend = player.selected_legend
         if player.legend_kills != {}:
