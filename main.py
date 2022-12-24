@@ -21,13 +21,16 @@ class JSONFile():
     @staticmethod
     def save(json_data, filename):
         """
-        Сохраняет игроков в файле players.json в формате JSON
+        Сохраняет данные в файле players.json в формате JSON
         """
         with open(filename + '.json', 'w') as json_file:
             json.dump(json_data, json_file, indent=4)
 
     @staticmethod
     def exists(filename):
+        """
+        Проверяет, существует ли файл players.json в формате JSON
+        """
         return os.path.exists(f'{filename}.json')
 
 
@@ -101,24 +104,60 @@ class divisionTransform():
         return progress_bar
 
 
+class divisionHandler():
+    def __init__(self, rank_split_score):
+        self.ranks_json = rank_split_score
+        self.divisions_json = self.calculate_divisions()
+
+    def calculate_divisions(self):
+        for rank in self.ranks_json:
+            pass
+        pass
+    def calculate_percent2next(self, rank, division):
+        pass
+
 config_json = {
     "settings": {
-        "API_KEY": "",
-        "RANK_SPLIT_SCORE": {
-            "Unranked": 0,
-            "Bronze": 1000,
-            "Silver": 3000,
-            "Gold": 5400,
-            "Platinum": 8200,
-            "Diamond": 11400,
-            "Master": 15000,
-            "Predator": 100000
+        "api_key": "",
+        "rank_split_score": {
+            "unranked": {
+                "score": 0,
+                "divisions": 0
+            },
+            "bronze": {
+                "score": 1000,
+                "divisions": 4
+            },
+            "silver": {
+                "score": 3000,
+                "divisions": 4
+            },
+            "gold": {
+                "score": 5400,
+                "divisions": 4
+            },
+            "platinum": {
+                "score": 8200,
+                "divisions": 4
+            },
+            "diamond": {
+                "score": 11400,
+                "divisions": 4
+            },
+            "master": {
+                "score": 15000,
+                "divisions": 0
+            },
+            "predator": {
+                "score": 100000,
+                "divisions": 0
+            }
         }
     },
     "players": [
         {
-            "Nickname": "",
-            "Platform": ""
+            "nickname": "",
+            "platform": ""
         }
     ]
 }
@@ -134,10 +173,11 @@ for json_filename in ['settings', 'players']:
 players_table = PrettyTable()
 players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kills)', 'State']
 
+
 # Создание объектов игроков
 players_list = []
 for pl in config_json['players']:
-    players_list.append(playerData(pl["Nickname"], pl["Platform"]))
+    players_list.append(playerData(pl["nickname"], pl["platform"]))
 print("Loading..")
 while True:
     
@@ -147,7 +187,7 @@ while True:
 
     for player in players_list:
         # Получение информации от API
-        json_data = playerAPI.get_data(config_json['settings']['API_KEY'], player.nickname, player.platform)
+        json_data = playerAPI.get_data(config_json['settings']['api_key'], player.nickname, player.platform)
         player.update(json_data)
 
         # Заполнение полей таблицы
@@ -155,7 +195,7 @@ while True:
         if player.nickname != player.api_nickname:
             player_nickname += f"({player.api_nickname})"
 
-        player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}"
+        player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
 
         player_legend = player.selected_legend
         if player.legend_kills != {}:
