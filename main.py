@@ -110,9 +110,17 @@ class divisionHandler():
         self.divisions_json = self.calculate_divisions()
 
     def calculate_divisions(self):
+        div_json= {}
+        last_rank_score = 0
         for rank in self.ranks_json:
-            pass
-        pass
+            div_json[rank] = {}
+            one_div_score = (self.ranks_json[rank]['score'] - last_rank_score) / self.ranks_json[rank]['divisions']
+            
+            for div_number in range(0, self.ranks_json[rank]['divisions'] + 1):
+                div_json[rank][div_number] = int(last_rank_score + div_number * one_div_score)
+
+            last_rank_score = self.ranks_json[rank]['score']
+        return div_json
     def calculate_percent2next(self, rank, division):
         pass
 
@@ -120,37 +128,37 @@ config_json = {
     "settings": {
         "api_key": "",
         "rank_split_score": {
-            "unranked": {
-                "score": 0,
-                "divisions": 0
+            "predator": {
+                "score": 100000,
+                "divisions": 1
             },
-            "bronze": {
-                "score": 1000,
-                "divisions": 4
+            "master": {
+                "score": 15000,
+                "divisions": 1
             },
-            "silver": {
-                "score": 3000,
-                "divisions": 4
-            },
-            "gold": {
-                "score": 5400,
+            "diamond": {
+                "score": 11400,
                 "divisions": 4
             },
             "platinum": {
                 "score": 8200,
                 "divisions": 4
             },
-            "diamond": {
-                "score": 11400,
+            "gold": {
+                "score": 5400,
                 "divisions": 4
             },
-            "master": {
-                "score": 15000,
-                "divisions": 0
+            "silver": {
+                "score": 3000,
+                "divisions": 4
             },
-            "predator": {
-                "score": 100000,
-                "divisions": 0
+            "bronze": {
+                "score": 1000,
+                "divisions": 4
+            },
+            "unranked": {
+                "score": 0,
+                "divisions": 1
             }
         }
     },
@@ -172,6 +180,9 @@ for json_filename in ['settings', 'players']:
 # Создание таблицы
 players_table = PrettyTable()
 players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kills)', 'State']
+
+div_handler = divisionHandler(config_json['settings']['rank_split_score'])
+
 
 
 # Создание объектов игроков
