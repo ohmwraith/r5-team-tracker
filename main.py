@@ -110,54 +110,69 @@ class divisionHandler():
         self.divisions_json = self.calculate_divisions()
 
     def calculate_divisions(self):
+        '''
+        Расчитывает количество дивизионов в каждом ранге
+        '''
         div_json= {}
-        last_rank_score = 0
-        for rank in self.ranks_json:
-            div_json[rank] = {}
-            one_div_score = (self.ranks_json[rank]['score'] - last_rank_score) / self.ranks_json[rank]['divisions']
-            
-            for div_number in range(0, self.ranks_json[rank]['divisions'] + 1):
-                div_json[rank][div_number] = int(last_rank_score + div_number * one_div_score)
 
-            last_rank_score = self.ranks_json[rank]['score']
+        # Список рангов
+        ranks_list = list(self.ranks_json.keys())
+    
+        # Перебираем все ранги, кроме последнего
+        for rank_index in range(0, len(ranks_list) - 1):
+            # Создаем словарь для текущего ранга
+            div_json[ranks_list[rank_index]] = {}
+
+            # Расчитываем количество очков в одном дивизионе
+            one_div_score = ((self.ranks_json[ranks_list[rank_index + 1]]['score']
+             - self.ranks_json[ranks_list[rank_index]]['score'])
+             / self.ranks_json[ranks_list[rank_index]]['divisions'])
+
+            # Расчитываем количество очков в каждом дивизионе
+            for div_number in range(self.ranks_json[ranks_list[rank_index]]['divisions'], -1, -1):
+                div_json[ranks_list[rank_index]][div_number] = int(self.ranks_json[ranks_list[rank_index + 1]]['score'] - one_div_score * div_number)
         return div_json
-    def calculate_percent2next(self, rank, division):
-        pass
+
+    def calculate_percent2next(self, score):
+        for rank in self.divisions_json:
+            for div in self.divisions_json[rank]:
+                if score < self.divisions_json[rank][div]:
+                    return (score - self.divisions_json[rank][div + 1]) / (self.divisions_json[rank][div] - self.divisions_json[rank][div + 1])
 
 config_json = {
     "settings": {
         "api_key": "",
         "rank_split_score": {
-            "predator": {
-                "score": 100000,
+            "unranked": {
+                "score": 0,
                 "divisions": 1
             },
-            "master": {
-                "score": 15000,
-                "divisions": 1
-            },
-            "diamond": {
-                "score": 11400,
-                "divisions": 4
-            },
-            "platinum": {
-                "score": 8200,
-                "divisions": 4
-            },
-            "gold": {
-                "score": 5400,
+            "bronze": {
+                "score": 1000,
                 "divisions": 4
             },
             "silver": {
                 "score": 3000,
                 "divisions": 4
             },
-            "bronze": {
-                "score": 1000,
+            "gold": {
+                "score": 5400,
                 "divisions": 4
             },
-            "unranked": {
-                "score": 0,
+            "platinum": {
+                "score": 8200,
+                "divisions": 4
+            },
+            "diamond": {
+                "score": 11400,
+                "divisions": 4
+            },
+            "master": {
+                "score": 15000,
+                "divisions": 1
+            },
+            "predator": {
+                "score": 100000,
                 "divisions": 1
             }
         }
@@ -184,14 +199,13 @@ players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kill
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
 
-
 # Создание объектов игроков
 players_list = []
 for pl in config_json['players']:
     players_list.append(playerData(pl["nickname"], pl["platform"]))
 print("Loading..")
 while True:
-    
+
     # Очистка переменных и таблицы
     increment = 1
     players_table.clear_rows()
