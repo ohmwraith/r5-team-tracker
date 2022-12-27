@@ -94,7 +94,7 @@ class divisionTransform():
         Возвращает заполненную шкалу прогресса
         """
         progress_bar = ''
-        success_lenght = int(perc2next_div * progress_lenght)
+        success_lenght = int(round(perc2next_div * progress_lenght))
     
         for n in range(0, success_lenght):
             progress_bar += '█'
@@ -198,7 +198,6 @@ players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kill
 
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
-
 # Создание объектов игроков
 players_list = []
 for pl in config_json['players']:
@@ -221,6 +220,9 @@ while True:
             player_nickname += f"({player.api_nickname})"
 
         player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
+        
+        player_rank_progress = div_handler.calculate_percent2next(player.score)
+        player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} ({player.score})"
 
         player_legend = player.selected_legend
         if player.legend_kills != {}:
@@ -228,7 +230,9 @@ while True:
 
         player_state = player.current_state_as_text
         
-        players_table.add_row([increment, player_nickname, player_rank, player.score, player_legend, player_state])
+        players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
+
+        players_table.align['PO'] = 'l'
 
         increment += 1
     os.system('cls')
