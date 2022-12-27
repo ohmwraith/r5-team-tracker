@@ -139,6 +139,14 @@ class divisionHandler():
                 if score < self.divisions_json[rank][div]:
                     return (score - self.divisions_json[rank][div + 1]) / (self.divisions_json[rank][div] - self.divisions_json[rank][div + 1])
 
+    def get_next_division_points(self, score):
+        '''
+        Возвращает начальное количество очков следующего дивизиона
+        '''
+        for rank in self.divisions_json:
+            for div in self.divisions_json[rank]:
+                if score < self.divisions_json[rank][div]:
+                    return self.divisions_json[rank][div]
 config_json = {
     "settings": {
         "api_key": "",
@@ -222,7 +230,7 @@ while True:
         player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
         
         player_rank_progress = div_handler.calculate_percent2next(player.score)
-        player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} ({player.score})"
+        player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} {player.score}/{div_handler.get_next_division_points(player.score)}"
 
         player_legend = player.selected_legend
         if player.legend_kills != {}:
