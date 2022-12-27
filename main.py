@@ -5,11 +5,10 @@ from prettytable import PrettyTable
 from abc import ABCMeta, abstractmethod
 
 class JSONFile():
+    """Класс для работы с файлами в формате JSON"""
     @staticmethod
     def get(filename):
-        """
-        Возвращает данные из файла filename.json в формате JSON
-        """
+        """Возвращает данные из файла filename.json в формате JSON"""
         try:
             with open(filename + '.json', 'r') as json_file:
                 return json.load(json_file)
@@ -20,21 +19,18 @@ class JSONFile():
 
     @staticmethod
     def save(json_data, filename):
-        """
-        Сохраняет данные в файле players.json в формате JSON
-        """
+        """Сохраняет данные в файле filename.json в формате JSON"""
         with open(filename + '.json', 'w') as json_file:
             json.dump(json_data, json_file, indent=4)
 
     @staticmethod
     def exists(filename):
-        """
-        Проверяет, существует ли файл players.json в формате JSON
-        """
+        """Проверяет, существует ли файл filename.json в формате JSON"""
         return os.path.exists(f'{filename}.json')
 
 
 class playerData():
+    """Класс для работы с данными игрока"""
     def __init__(self, nickname, platform):
         self.nickname = nickname
         self.api_nickname = nickname
@@ -54,6 +50,7 @@ class playerData():
 
 
     def update(self, json_data):
+        """ Обновляет данные игрока """
         self.data = json_data
         self.api_nickname = json_data['global']['name']
         self.level = json_data['global']['level']
@@ -75,16 +72,20 @@ class playerData():
         
 
 class playerAPI():
+    # Класс для работы с API
     @staticmethod
     def get_data(api_key, nickname, platform):
+        # Получает данные игрока с API
         responce = r.get(
         f"https://api.mozambiquehe.re/bridge?auth={api_key}&player={nickname}&platform={platform}")
         return responce.json()
 
 
 class divisionTransform():
+    # Класс для преобразования данных дивизионов
     @staticmethod
     def to_roman(division):
+        """ Принимает номер дивизиона от 1 до 4 и возвращает его римскими цифрами """
         return ('I' * division).replace('IIII', 'IV')
     
     @staticmethod
@@ -105,14 +106,14 @@ class divisionTransform():
 
 
 class divisionHandler():
+    # Класс для работы с дивизионами
     def __init__(self, rank_split_score):
         self.ranks_json = rank_split_score
+        # Словарь с разделением очков на дивизионы
         self.divisions_json = self.calculate_divisions()
 
     def calculate_divisions(self):
-        '''
-        Расчитывает количество дивизионов в каждом ранге
-        '''
+        """Расчитывает количество дивизионов в каждом ранге"""
         div_json= {}
 
         # Список рангов
@@ -134,15 +135,14 @@ class divisionHandler():
         return div_json
 
     def calculate_percent2next(self, score):
+        """Расчитывает процент заполнения шкалы прогресса до следующего дивизиона"""
         for rank in self.divisions_json:
             for div in self.divisions_json[rank]:
                 if score < self.divisions_json[rank][div]:
                     return (score - self.divisions_json[rank][div + 1]) / (self.divisions_json[rank][div] - self.divisions_json[rank][div + 1])
 
     def get_next_division_points(self, score):
-        '''
-        Возвращает начальное количество очков следующего дивизиона
-        '''
+        """Возвращает начальное количество очков следующего дивизиона"""
         for rank in self.divisions_json:
             for div in self.divisions_json[rank]:
                 if score < self.divisions_json[rank][div]:
@@ -223,25 +223,29 @@ while True:
         player.update(json_data)
 
         # Заполнение полей таблицы
+        # Никнейм
         player_nickname = player.nickname
         if player.nickname != player.api_nickname:
             player_nickname += f"({player.api_nickname})"
-
+        # Ранг
         player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
         
+        # Очки
         player_rank_progress = div_handler.calculate_percent2next(player.score)
         player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} {player.score}/{div_handler.get_next_division_points(player.score)}"
-
+        
+        # Легенда
         player_legend = player.selected_legend
         if player.legend_kills != {}:
             player_legend += f"({player.legend_kills})"
-
+        # Состояние
         player_state = player.current_state_as_text
-        
+        # Добавление в таблицу
         players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
 
         players_table.align['PO'] = 'l'
 
         increment += 1
+    # Очистка консоли и вывод таблицы
     os.system('cls')
     print(players_table)
