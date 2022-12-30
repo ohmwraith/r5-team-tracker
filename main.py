@@ -3,7 +3,7 @@ import json
 import os
 from prettytable import PrettyTable
 
-class JsonFileManager():
+class JsonFileStringManager():
     """Класс для работы с файлами в формате JSON"""
     @staticmethod
     def get(filename):
@@ -22,10 +22,17 @@ class JsonFileManager():
         with open(filename + '.json', 'w') as json_file:
             json.dump(json_data, json_file, indent=4)
 
+
+# Класс, сохраняющий player.json в файл и загружающий его из файла
+class playerJsonManager():
     @staticmethod
-    def exists(filename):
-        """Проверяет, существует ли файл filename.json в формате JSON"""
-        return os.path.exists(f'{filename}.json')
+    def is_player_in_json(json_data, nickname, platform):
+        """Проверяет, есть ли данные об этом игроке в файле player.json"""
+        for player in json_data:
+            if player['nickname'] == nickname and player['platform'] == platform:
+                return True
+        return False
+
 
 
 class playerData():
@@ -47,6 +54,26 @@ class playerData():
         self.legend_kills = {}
         self.data = {}
 
+    def get_json_data(self):
+        """Возвращает данные игрока в формате JSON"""
+        return {
+            "nickname": self.nickname,
+            "api_nickname": self.api_nickname,
+            "data": {
+                "platform": self.platform,
+                "level": self.level,
+                "score": self.score,
+                "rank": self.rank,
+                "division": self.division,
+                "is_online": self.is_online,
+                "is_in_game": self.is_in_game,
+                "party_full": self.party_full,
+                "current_state_as_text": self.current_state_as_text,
+                "selected_legend": self.selected_legend,
+                "legend_data": self.legend_data,
+                "legend_kills": self.legend_kills
+            }
+        }
 
     def update(self, json_data):
         """ Обновляет данные игрока """
@@ -61,13 +88,14 @@ class playerData():
         self.party_full = json_data['realtime']['partyFull'] == 1
         self.current_state_as_text = json_data['realtime']['currentStateAsText']
         self.selected_legend = json_data['realtime']['selectedLegend']
+        self.legend_data = json_data['legends']['all']
         try:
-            self.legend_data = json_data['legends']['all'][self.selected_legend]['data']
-            for stat in self.legend_data:
+            self.selected_legend_data = json_data['legends']['all'][self.selected_legend]['data']
+            for stat in self.selected_legend_data:
                 if stat['key'] == "kills":
                     self.legend_kills = stat['value']
         except KeyError:
-            self.legend_data = "API Error"
+            self.selected_legend_data = "Ошибка API"
         
 
 class playerAPI():
@@ -194,10 +222,10 @@ config_json = {
 
 # Загрузка конфигов
 for json_filename in ['settings', 'players']:
-    if JsonFileManager.exists(json_filename):
-        config_json[json_filename] = JsonFileManager.get(json_filename)
+    if os.path.exists(f'{json_filename}.json'):
+        config_json[json_filename] = JsonFileStringManager.get(json_filename)
     else:
-        JsonFileManager.save(config_json[json_filename], json_filename)
+        JsonFileStringManager.save(config_json[json_filename], json_filename)
 
 # Создание таблицы
 players_table = PrettyTable()
@@ -205,11 +233,16 @@ players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kill
 
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
+# Проверка наличия API ключа
+if config_json['settings']['api_key'] == "":
+    print("API ключ не найден! Укажите ключ в файле settings.json")
+    exit()
+
 # Создание объектов игроков
 players_list = []
 for pl in config_json['players']:
     players_list.append(playerData(pl["nickname"], pl["platform"]))
-print("Loading..")
+print("Загрузка..")
 while True:
 
     # Очистка переменных и таблицы
