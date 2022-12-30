@@ -2,9 +2,8 @@ import requests as r
 import json
 import os
 from prettytable import PrettyTable
-from abc import ABCMeta, abstractmethod
 
-class JSONFile():
+class JsonFileManager():
     """Класс для работы с файлами в формате JSON"""
     @staticmethod
     def get(filename):
@@ -195,10 +194,10 @@ config_json = {
 
 # Загрузка конфигов
 for json_filename in ['settings', 'players']:
-    if JSONFile.exists(json_filename):
-        config_json[json_filename] = JSONFile.get(json_filename)
+    if JsonFileManager.exists(json_filename):
+        config_json[json_filename] = JsonFileManager.get(json_filename)
     else:
-        JSONFile.save(config_json[json_filename], json_filename)
+        JsonFileManager.save(config_json[json_filename], json_filename)
 
 # Создание таблицы
 players_table = PrettyTable()
