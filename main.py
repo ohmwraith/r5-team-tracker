@@ -35,6 +35,7 @@ class playerJsonManager():
 
 
 
+
 class playerData():
     """Класс для работы с данными игрока"""
     def __init__(self, nickname, platform):
@@ -52,15 +53,16 @@ class playerData():
         self.selected_legend = "undefined"
         self.legend_data = {}
         self.legend_kills = {}
-        self.data = {}
+        self.last_api_data = {}
+        self.saved_data = {}
 
     def get_json_data(self):
         """Возвращает данные игрока в формате JSON"""
         return {
             "nickname": self.nickname,
+            "platform": self.platform,
             "api_nickname": self.api_nickname,
             "data": {
-                "platform": self.platform,
                 "level": self.level,
                 "score": self.score,
                 "rank": self.rank,
@@ -77,7 +79,7 @@ class playerData():
 
     def update(self, json_data):
         """ Обновляет данные игрока """
-        self.data = json_data
+        self.last_api_data = json_data
         self.api_nickname = json_data['global']['name']
         self.level = json_data['global']['level']
         self.score = json_data['global']['rank']['rankScore']
@@ -233,6 +235,9 @@ players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kill
 
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
+# Загрузка сохраненных данных
+saved_players_json = JsonFileStringManager.get('storage')
+
 # Проверка наличия API ключа
 if config_json['settings']['api_key'] == "":
     print("API ключ не найден! Укажите ключ в файле settings.json")
@@ -243,41 +248,68 @@ players_list = []
 for pl in config_json['players']:
     players_list.append(playerData(pl["nickname"], pl["platform"]))
 print("Загрузка..")
-while True:
+first_cycle = True
+try:
+    while True:
 
-    # Очистка переменных и таблицы
-    increment = 1
-    players_table.clear_rows()
+        # Очистка переменных и таблицы
+        increment = 1
+        players_table.clear_rows()
 
-    for player in players_list:
-        # Получение информации от API
-        json_data = playerAPI.get_data(config_json['settings']['api_key'], player.nickname, player.platform)
-        player.update(json_data)
+        for player in players_list:
+            # Получение информации от API
+            json_data = playerAPI.get_data(config_json['settings']['api_key'], player.nickname, player.platform)
+            if 'Error' in json_data:
+                print(f"API вернула ошибку: {json_data['Error']}. Игрок {player.nickname} не будет отображен в таблице")
+                pass
+            player.update(json_data)
 
-        # Заполнение полей таблицы
-        # Никнейм
-        player_nickname = player.nickname
-        if player.nickname != player.api_nickname:
-            player_nickname += f"({player.api_nickname})"
-        # Ранг
-        player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
-        
-        # Очки
-        player_rank_progress = div_handler.calculate_percent2next(player.score)
-        player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} {player.score}/{div_handler.get_next_division_points(player.score)}"
-        
-        # Легенда
-        player_legend = player.selected_legend
-        if player.legend_kills != {}:
-            player_legend += f"({player.legend_kills})"
-        # Состояние
-        player_state = player.current_state_as_text
-        # Добавление в таблицу
-        players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
 
-        players_table.align['PO'] = 'l'
 
-        increment += 1
-    # Очистка консоли и вывод таблицы
-    os.system('cls')
-    print(players_table)
+
+            # Заполнение полей таблицы
+            # Никнейм
+            player_nickname = player.nickname
+            if player.nickname != player.api_nickname:
+                player_nickname += f"({player.api_nickname})"
+            # Ранг
+            player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
+            
+            # Очки
+            player_rank_progress = div_handler.calculate_percent2next(player.score)
+            player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} {player.score}/{div_handler.get_next_division_points(player.score)}"
+            
+            # Легенда
+            player_legend = player.selected_legend
+            if player.legend_kills != {}:
+                player_legend += f"({player.legend_kills})"
+            # Состояние
+            player_state = player.current_state_as_text
+            # Добавление в таблицу
+            players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
+
+            players_table.align['PO'] = 'l'
+
+            increment += 1
+
+            # Проверка наличия игрока в базе данных
+            if first_cycle:
+                if playerJsonManager.is_player_in_json(saved_players_json, player.nickname, player.platform):
+                    for saved_player in saved_players_json:
+                        if saved_player['nickname'] == player.nickname and saved_player['platform'] == player.platform:
+                            player.saved_data = saved_player['data']
+                else:
+                    saved_players_json.append(player.get_json_data())
+                first_cycle = False
+
+
+        # Очистка консоли и вывод таблицы
+        os.system('cls')
+        print(players_table)
+except Exception as e:
+    print(e)
+finally:
+    print("Сохранение..")
+    JsonFileStringManager.save(saved_players_json, 'storage')
+    print("Сохранено!")
+    exit()
