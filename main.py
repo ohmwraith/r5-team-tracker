@@ -2,6 +2,7 @@ import requests as r
 import json
 import os
 from prettytable import PrettyTable
+from datetime import datetime
 
 class JsonFileStringManager():
     """Класс для работы с файлами в формате JSON"""
@@ -49,8 +50,9 @@ class playerData():
         self.is_online = False
         self.is_in_game = False
         self.party_full = False
-        self.current_state_as_text = "undefined"
-        self.selected_legend = "undefined"
+        self.current_state_as_text = None
+        self.last_online = None
+        self.selected_legend = None
         self.legend_data = {}
         self.legend_kills = {}
         self.last_api_data = {}
@@ -88,6 +90,10 @@ class playerData():
         self.is_online = json_data['realtime']['isOnline'] == 1
         self.is_in_game = json_data['realtime']['isInGame'] == 1
         self.party_full = json_data['realtime']['partyFull'] == 1
+        if self.is_in_game:
+            # Если игрок в игре, то записываем текущее время в переменную last_online
+            self.last_online = datetime.now()
+
         self.current_state_as_text = json_data['realtime']['currentStateAsText']
         self.selected_legend = json_data['realtime']['selectedLegend']
         self.legend_data = json_data['legends']['all']
@@ -98,6 +104,7 @@ class playerData():
                     self.legend_kills = stat['value']
         except KeyError:
             self.selected_legend_data = "Ошибка API"
+
         
 
 class playerAPI():
@@ -231,7 +238,7 @@ for json_filename in ['settings', 'players']:
 
 # Создание таблицы
 players_table = PrettyTable()
-players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'PO', 'Legend(Kills)', 'State']
+players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'Score', 'Legend(Kills)', 'State']
 
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
@@ -283,12 +290,25 @@ try:
             player_legend = player.selected_legend
             if player.legend_kills != {}:
                 player_legend += f"({player.legend_kills})"
+
             # Состояние
             player_state = player.current_state_as_text
+            
+            if player_state == "Offline":
+                # Проверка на наличие сохраненного времени последнего онлайна
+                if player.last_online is not None:
+                    last_online_delta = datetime.now() - player.last_online
+                    if last_online_delta.days > 0:
+                        player_state += f" {last_online_delta.days}d"
+                    if last_online_delta.seconds//3600 > 0:
+                        player_state += f" {last_online_delta.seconds//3600}h"
+                    if last_online_delta.seconds//60%60 > 0:
+                        player_state += f" {last_online_delta.seconds//60%60}m"
+            
             # Добавление в таблицу
             players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
 
-            players_table.align['PO'] = 'l'
+            players_table.align['Score'] = 'l'
 
             increment += 1
 
