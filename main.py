@@ -238,7 +238,7 @@ for json_filename in ['settings', 'players']:
 
 # Создание таблицы
 players_table = PrettyTable()
-players_table.field_names = ['No', 'Nickname(Steam)', 'Rank', 'Score', 'Legend(Kills)', 'State']
+players_table.field_names = ['No', 'Nickname (Steam)', 'Rank', 'Score [Changes]', 'Legend [Kills]', 'State']
 
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
@@ -271,25 +271,29 @@ try:
                 pass
             player.update(json_data)
 
-
-
-
             # Заполнение полей таблицы
             # Никнейм
             player_nickname = player.nickname
             if player.nickname != player.api_nickname:
-                player_nickname += f"({player.api_nickname})"
+                player_nickname += f" ({player.api_nickname})"
+
             # Ранг
             player_rank = f"{player.rank} {divisionTransform.to_roman(player.division)}".upper()
             
             # Очки
             player_rank_progress = div_handler.calculate_percent2next(player.score)
             player_po = f"{divisionTransform.to_progress(player_rank_progress, 14)} {player.score}/{div_handler.get_next_division_points(player.score)}"
-            
+            for saved_player in saved_players_json:
+                if player.nickname == saved_player['nickname']:
+                    saved_points_delta = player.score - saved_player['data']['score']
+                    if saved_points_delta > 0:
+                        player_po += f" [ +{saved_points_delta} ]"
+                    elif saved_points_delta < 0:
+                        player_po += f" [ {saved_points_delta} ]"
             # Легенда
             player_legend = player.selected_legend
             if player.legend_kills != {}:
-                player_legend += f"({player.legend_kills})"
+                player_legend += f" [ {player.legend_kills} ]"
 
             # Состояние
             player_state = player.current_state_as_text
@@ -298,17 +302,18 @@ try:
                 # Проверка на наличие сохраненного времени последнего онлайна
                 if player.last_online is not None:
                     last_online_delta = datetime.now() - player.last_online
+                    player_state += " ["
                     if last_online_delta.days > 0:
                         player_state += f" {last_online_delta.days}d"
                     if last_online_delta.seconds//3600 > 0:
                         player_state += f" {last_online_delta.seconds//3600}h"
                     if last_online_delta.seconds//60%60 > 0:
                         player_state += f" {last_online_delta.seconds//60%60}m"
-            
+                    player_state += "]"
             # Добавление в таблицу
             players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
 
-            players_table.align['Score'] = 'l'
+            players_table.align['Score [Changes]'] = 'l'
 
             increment += 1
 
