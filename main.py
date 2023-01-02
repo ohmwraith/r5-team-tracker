@@ -238,7 +238,7 @@ for json_filename in ['settings', 'players']:
 
 # Создание таблицы
 players_table = PrettyTable()
-players_table.field_names = ['No', 'Nickname (Steam)', 'Rank', 'Score [Changes]', 'Legend [Kills]', 'State']
+players_table.field_names = ['№', 'Никнейм (Steam)', 'Ранг', 'Счёт [Изменения]', 'Легенда [Убийства]', 'Состояние']
 
 div_handler = divisionHandler(config_json['settings']['rank_split_score'])
 
@@ -310,10 +310,11 @@ try:
                     if last_online_delta.seconds//60%60 > 0:
                         player_state += f" {last_online_delta.seconds//60%60}m"
                     player_state += "]"
+
             # Добавление в таблицу
             players_table.add_row([increment, player_nickname, player_rank, player_po, player_legend, player_state])
 
-            players_table.align['Score [Changes]'] = 'l'
+            players_table.align['Счёт [Изменения]'] = 'l'
 
             increment += 1
 
@@ -332,7 +333,7 @@ try:
         os.system('cls')
         print(players_table)
 except Exception as e:
-    print(e)
+    print(f"Во время работы программы возникла ошибка: {e}")
 finally:
     print("Сохранение..")
     JsonFileStringManager.save(saved_players_json, 'storage')
